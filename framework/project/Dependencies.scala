@@ -178,6 +178,7 @@ object Dependencies {
   val iterateesDependencies = Seq(
     "org.scala-stm" %% "scala-stm" % "0.7",
     "com.typesafe" % "config" % "1.0.2",
+    "functional-reactive-extensions" %% "functional-reactive-extensions" % "0.1-SNAPSHOT",
     specsBuild % "test")
 
   val jsonDependencies = Seq(
