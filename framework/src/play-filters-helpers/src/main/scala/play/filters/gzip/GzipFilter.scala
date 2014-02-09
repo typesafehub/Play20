@@ -100,11 +100,12 @@ class GzipFilter(gzip: Enumeratee[Array[Byte], Array[Byte]] = Gzip.gzip(GzipFilt
         // Run the enumerator partially (means we get an enumerator that contains the rest of the input)
         Concurrent.runPartial(result.body &> gzip, buffer(Nil, 0)).map {
           // We successfully buffered the whole thing, so we have a content length
-          case (Right((chunks, contentLength)), _) =>
+          case (Right((chunks, contentLength)), empty) =>
             SimpleResult(
               header = result.header.copy(headers = setupHeader(result.header.headers)
                 + (CONTENT_LENGTH -> Integer.toString(contentLength))),
-              body = Enumerator.enumerate(chunks),
+              // we must include the empty enumerator to ensure that anything relying on it being fully consumed works
+              body = Enumerator.enumerate(chunks) >>> empty,
               connection = result.connection
             )
           // We still had some input remaining
