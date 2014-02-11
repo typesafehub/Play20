@@ -88,7 +88,7 @@ class GzipFilter(gzip: Enumeratee[Array[Byte], Array[Byte]] = Gzip.gzip(GzipFilt
         // right means we did buffer it before reaching the threshold, and contains the chunks and the length of data
         def buffer(chunks: List[Array[Byte]], count: Int): Iteratee[Array[Byte], Either[List[Array[Byte]], (List[Array[Byte]], Int)]] = {
           Cont {
-            case Input.EOF => Done(Right((chunks.reverse, count)))
+            case Input.EOF => Done(Right((chunks.reverse, count)), Input.EOF)
             // If we have 10 or less bytes already, then we have so far only seen the gzip header
             case Input.El(data) if count <= GzipFilter.GzipHeaderLength || count + data.length < chunkedThreshold =>
               buffer(data :: chunks, count + data.length)
