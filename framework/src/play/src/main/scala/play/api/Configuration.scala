@@ -10,6 +10,7 @@ import com.typesafe.config._
 import scala.collection.JavaConverters._
 import scala.util.control.NonFatal
 import play.utils.PlayIO
+import java.lang.{ ClassLoader, Thread }
 
 /**
  * This object provides a set of operations to create `Configuration` values.
@@ -26,7 +27,10 @@ object Configuration {
 
   private[this] lazy val dontAllowMissingConfigOptions = ConfigParseOptions.defaults().setAllowMissing(false)
 
-  private[this] lazy val dontAllowMissingConfig = ConfigFactory.load(dontAllowMissingConfigOptions)
+  private[this] def getPlayOverridesConfig(classLoader:ClassLoader): Config = ConfigFactory.parseResources(classLoader, "play/reference-overrides.conf")
+
+  private[this] lazy val dontAllowMissingConfig = ConfigFactory.load(dontAllowMissingConfigOptions).withFallback(getPlayOverridesConfig(Thread.currentThread().getContextClassLoader()))
+
   /**
    * loads `Configuration` from config.resource or config.file. If not found default to 'conf/application.conf' in Dev mode
    * @return  configuration to be used
@@ -37,8 +41,9 @@ object Configuration {
         devSettings.get("config.file").orElse(Option(System.getProperty("config.file")))
           .map(f => new File(f)).getOrElse(new File(appPath, "conf/application.conf"))
       }
+      val playOverridesConfig: Config = getPlayOverridesConfig(Thread.currentThread().getContextClassLoader())
       val config = Option(System.getProperty("config.resource"))
-        .map(ConfigFactory.parseResources(_)).getOrElse(ConfigFactory.parseFileAnySyntax(file))
+        .map(ConfigFactory.parseResources(_)).getOrElse(ConfigFactory.parseFileAnySyntax(file)).withFallback(playOverridesConfig)
 
       ConfigFactory.parseMap(devSettings.asJava).withFallback(ConfigFactory.load(config))
     } catch {
